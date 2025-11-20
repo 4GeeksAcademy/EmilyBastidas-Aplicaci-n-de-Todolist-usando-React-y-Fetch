@@ -9,28 +9,69 @@ const Home = () => {
 	const [inputValue, setInputValue] = useState("");
 	const [todos, setTodos] = useState([]);
 
-//Creo user
-
 	useEffect(() => {
-
-
-
-
-		/*fetch('https://playground.4geeks.com/todo/users/bastidasEmily', {
-			method: 'POST',
-			mode: 'cors',
-			redirect: 'follow',
-			headers: new Headers({
-				'Content-Type': 'text/plain'
-			})
-		})
-			.then(res => res.json())
-			.then(response => { /* manejar la respuesta })
-			.catch(error => console.error(error)); */
+		getTodos()
 
 	}, [])
 
-// 
+	//listar tareas
+
+	const getTodos = () => {
+		fetch('https://playground.4geeks.com/todo/users/bastidasEmi')
+			.then((response) => {
+				if (response.status === 404) {
+					createUser()
+				}
+				return response.json()
+			})
+			.then((data) => {
+				setTodos(data.todos)
+			})
+			.catch((error) => {
+				console.log(error.message);
+			})
+	}
+
+	//crear usuarios
+
+	const createUser = () => {
+		fetch('https://playground.4geeks.com/todo/users/bastidasEmi', {
+			method: "POST",
+			headers: { "content-type": "application/json" }
+		})
+
+			.then((response) => {
+				if (response.status === 404 || response.status === 200) {
+					getTodos()
+				}
+			})
+			.catch((error) => {
+				console.log(error.message)
+			})
+	}
+
+	//borrar tarea
+
+	const deleteTodos = (id) => {
+		fetch("https://playground.4geeks.com/todo/todos/"+ id, {
+			method: "DELETE",
+			headers: { "content-type": "application/json" }
+		})
+			.then((response) => {
+				console.log(response);
+
+				if (response.status === 404 || response.status === 204) {
+					getTodos()
+				}
+			})
+			.catch((error) => {
+				console.log(error.message);
+
+			})
+	}
+
+
+
 	let mensaje = null;
 
 	if (todos.length === 0) {
@@ -44,18 +85,35 @@ const Home = () => {
 			<h1 className="mt-5 mb-5">todos</h1>
 
 			<ul className="mx-auto">
-				<li><input className="w-100" type="text" placeholder="What do you need?" onChange={(e) => setInputValue(e.target.value)} // capturo la info del input con onChange
+				<li><input className="w-100" type="text" placeholder="What do you need?" onChange={(e) => setInputValue(e.target.value)}
 					value={inputValue}
-					onKeyPress={(e) => {
-						if (e.key === "Enter") { //si el usuario presiona enter, hice una condicional que detecta por medio de trim si el campo está vacío y que no guarde la tarea vacia
+					//crear tarea
+					onKeyDown={(e) => {
+
+						if (e.key === "Enter") {
 
 							if (inputValue.trim().length === 0) {
-								console.log("el usuario no ha ingresado datos");
+								console.log("tarea vacía");
 								return;
 							}
+							fetch("https://playground.4geeks.com/todo/todos/bastidasEmi", {
+								method: "POST",
+								headers: {
+									"content-type": "application/json"
+								},
+								body: JSON.stringify({
+									label: inputValue,
+									is_done: false
+								})
+							})
+								.then((response) => response.json())
+								.then((data) => {
 
-							setTodos(todos.concat(inputValue));
-							setInputValue("")
+									getTodos();
+
+									setInputValue("")
+								})
+								.catch((error) => console.log(error.message));
 						}
 					}}
 				></input>
@@ -63,8 +121,8 @@ const Home = () => {
 				</li>
 
 				{todos.map((items, index) => (
-					<li key={index} className="d-flex justify-content-between">
-						{items} <IoCloseOutline className="delete-icon" onClick={() => setTodos(todos.filter((t, currentIndex) => index != currentIndex))} />
+					<li key={items.id} className="d-flex justify-content-between">
+						{items.label} <IoCloseOutline className="delete-icon" onClick={() => deleteTodos(items.id)} />
 					</li>
 				))}
 
